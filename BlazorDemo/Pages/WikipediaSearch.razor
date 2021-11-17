@@ -1,17 +1,32 @@
 ﻿@inherits WikipediaSearchComponent
 @page "/wikipedia-search"
+@using BlazorDemo.Clients
 
-<h3>WikipediaSearchComponent works</h3>
+<EditForm Model="Model" OnValidSubmit="HandleSubmit">
+    <div class="row">
+        <div class="form-group col-2">
+            <InputSelect class="form-control" @bind-Value="Model.Language">
+                <option value="@WikipediaSearchLanguage.Polish">polski</option>
+                <option value="@WikipediaSearchLanguage.English">angielski</option>
+            </InputSelect>
+        </div>
 
-<input type="text" @bind="SearchQuery" />
-<button @onclick="Search" class="btn btn-primary">Search</button>
+        <div class="form-group col">
+            <InputText class="form-control" @bind-Value="Model.Query"/>
+        </div>
 
-@if(Result != null)
+        <div class="col-1">
+            <button type="submit" class="btn btn-primary">Szukaj</button>
+        </div>
+    </div>
+</EditForm>
+
+@if (Result != null)
 {
     <ul>
         @foreach (var x in Result)
         {
-            <li><a href="@x.Uri">@x.Article</a></li>
+            <li><a href="@x.Uri" target="_blank">@x.Article</a></li>
         }
     </ul>
 }
