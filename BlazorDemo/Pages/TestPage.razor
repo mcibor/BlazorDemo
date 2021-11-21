@@ -1,0 +1,14 @@
+﻿@page "/test"
+
+<CustomForm Model=model>
+    <CustomFormComponent />
+</CustomForm>
+
+@code {
+    private AModel model = new();
+
+    private class AModel
+    {
+        public string Name { get; set; }
+    }
+}

@@ -1,0 +1,21 @@
+﻿
+<h3>CustomFormComponent</h3>
+<p>@CustomFormSetMessage</p>
+
+
+@code {
+    private CustomForm _form;
+
+    private string CustomFormSetMessage;
+
+    [CascadingParameter]
+    public CustomForm Form 
+    {
+        get => _form;
+        set
+        {
+            _form = value;
+            CustomFormSetMessage = $"CustomForm set in CustomFormInput {_form.GetHashCode()}";
+        }
+    }
+}

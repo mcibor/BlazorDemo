@@ -1,0 +1,16 @@
+﻿<h1>Child Component</h1>
+
+<p>Child hash: @this.GetHashCode()</p>
+
+@if(parent is not null)
+{
+    <p>Parent hash: @parent.GetHashCode()</p>
+
+}
+
+@code{
+
+    [CascadingParameter]
+    protected Parent parent { get; set; }
+
+}
