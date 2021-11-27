@@ -1,0 +1,64 @@
+﻿@page "/"
+
+@if (DirectoryListing != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th colspan="2">@DirectoryListing.FullName</th>
+            </tr>
+            <tr>
+                <th>Name</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th colspan="2"><a href="" @onclick="() => ChangeDirectory(ParentDir)">@ParentDir</a></th>
+            </tr>
+
+            @if (DirectoryListing.Directories != null)
+            {
+                @foreach(var d in DirectoryListing.Directories)
+                {
+                    <tr>
+                        <th colspan="2"><a href="" @onclick="() => ChangeDirectory(d)">@d</a></th>
+                    </tr>
+                }
+            }
+
+            @if (DirectoryListing.Files != null)
+            {
+                @foreach(var f in DirectoryListing.Files)
+                {
+                    <tr>
+                        <th>@f.Name</th>
+                        <th>@f.Size</th>
+                    </tr>
+                }
+            }
+            
+        </tbody>
+    </table>
+}
+
+@code{
+    const string ParentDir = "..";
+
+    DirectoryListingDto? DirectoryListing { get; set; }
+
+    [Inject]
+    HttpClient? http { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer");
+    }
+
+    private async Task ChangeDirectory(string directory)
+    {
+        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName, directory));
+        DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
+    }
+}
+
