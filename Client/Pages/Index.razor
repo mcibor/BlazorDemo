@@ -5,7 +5,9 @@
     <table class="table">
         <thead>
             <tr>
-                <th colspan="2">@DirectoryListing.FullName</th>
+                <th colspan="2">
+                    <DirectoryPathLinks FullPath=@DirectoryListing.FullName ChangeDirectory=ChangeToAbsoluteDirectory />
+                </th>
             </tr>
             <tr>
                 <th>Name</th>
@@ -14,22 +16,26 @@
         </thead>
         <tbody>
             <tr>
-                <th colspan="2"><a href="" @onclick="() => ChangeDirectory(ParentDir)">@ParentDir</a></th>
+                <th colspan="2">  
+                    <DirectoryLink Directory=@ParentDir ChangeDirectory=ChangeDirectory />
+                </th>
             </tr>
 
             @if (DirectoryListing.Directories != null)
             {
-                @foreach(var d in DirectoryListing.Directories)
+                @foreach (var d in DirectoryListing.Directories)
                 {
                     <tr>
-                        <th colspan="2"><a href="" @onclick="() => ChangeDirectory(d)">@d</a></th>
+                        <th colspan="2">
+                            <DirectoryLink Directory=@d ChangeDirectory=ChangeDirectory />
+                        </th>
                     </tr>
                 }
             }
 
             @if (DirectoryListing.Files != null)
             {
-                @foreach(var f in DirectoryListing.Files)
+                @foreach (var f in DirectoryListing.Files)
                 {
                     <tr>
                         <th>@f.Name</th>
@@ -55,9 +61,15 @@
         DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer");
     }
 
+    private async Task ChangeToAbsoluteDirectory(string directory)
+    {
+        var path = System.Web.HttpUtility.UrlEncode(directory);
+        DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
+    }
+
     private async Task ChangeDirectory(string directory)
     {
-        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName, directory));
+        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName!, directory));
         DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
     }
 }

@@ -1,0 +1,36 @@
+﻿
+@{
+    string dirPath = "";
+    foreach (var dirName in RootDirectories)
+    {
+        if (dirName.Length == 2 && dirName.EndsWith(":"))
+        {
+            dirPath = dirName + "\\";
+        }
+        else
+        {
+            if (!dirPath.EndsWith("\\"))
+            {
+                dirPath += "\\";
+            }
+            dirPath += dirName;
+        }
+
+        <DirectoryLink Directory=@dirPath ChangeDirectory=ChangeDirectory>
+            <Body>
+                @dirName
+            </Body>
+        </DirectoryLink>
+        @:\
+    }
+}
+
+@code {
+    IEnumerable<string> RootDirectories => FullPath?.Split('\\').Where(s => !string.IsNullOrWhiteSpace(s)) ?? Enumerable.Empty<string>();
+
+    [Parameter]
+    public string? FullPath { get; set; }    
+
+    [Parameter]
+    public EventCallback<string> ChangeDirectory { get; set; }
+}
