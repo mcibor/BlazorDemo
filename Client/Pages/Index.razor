@@ -38,7 +38,7 @@
                 @foreach (var f in DirectoryListing.Files)
                 {
                     <tr>
-                        <th>@f.Name</th>
+                        <th><a href="" @onclick="()=>DownloadFile(f.Name)">@f.Name</a></th>
                         <th>@f.Size</th>
                     </tr>
                 }
@@ -56,6 +56,9 @@
     [Inject]
     HttpClient? http { get; set; }
 
+    [Inject]
+    IJSRuntime JS { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer");
@@ -71,6 +74,14 @@
     {
         var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName!, directory));
         DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
+    }
+
+    private async Task DownloadFile(string fileName)
+    {
+        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName!, fileName));
+        var responseStream = await http!.GetStreamAsync("./api/FileExplorer?path=" + path);
+        using var streamRef = new DotNetStreamReference(responseStream);
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     }
 }
 
