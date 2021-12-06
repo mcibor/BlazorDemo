@@ -33,6 +33,12 @@ namespace BlazorApp.Server.Controllers
             return BadRequest();
         }
 
+        [HttpGet("testTimeout")]
+        public ActionResult TestTimeout(int? time)
+        {
+            return new SlowResult(time ?? 100);
+        }
+
         private static DirectoryListingDto GetDirectoryListing(DirectoryInfo dirInfo)
         {
             var files = new Lazy<List<FileDto>>();
@@ -60,6 +66,34 @@ namespace BlazorApp.Server.Controllers
                 Files = files.IsValueCreated ? files.Value : null,
                 Directories = dirs.IsValueCreated ? dirs.Value : null,
             };
+        }
+    }
+
+    public class SlowResult : ActionResult
+    {
+        private readonly int totalActionTimeInSeconds;
+
+        public SlowResult(int totalActionTimeInSeconds)
+        {
+            this.totalActionTimeInSeconds = totalActionTimeInSeconds;
+        }
+
+        public override async Task ExecuteResultAsync(ActionContext context)
+        {
+            var response = context.HttpContext.Response;
+            response.StatusCode = 200;
+            response.ContentType = "application/octet-stream";
+            response.ContentLength = totalActionTimeInSeconds;
+
+            await response.StartAsync();
+
+            for (int i = 0; i < totalActionTimeInSeconds; i++)
+            {
+                response.Body.WriteByte(1);
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+
+            await response.CompleteAsync();
         }
     }
 }

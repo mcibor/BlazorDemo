@@ -1,0 +1,18 @@
+﻿@page "/timeout"
+
+<input @bind=Time type="number" min="2" placeholder="Time" />
+<button class="btn btn-primary" @onclick=Click>Test timeout</button>
+
+@code {
+    int Time { get; set; } = 100;
+
+    [Inject]
+    public HttpClient Http { get; set; }
+
+    async Task Click()
+    {
+        Http.Timeout = TimeSpan.FromSeconds(Time - 1);
+
+        await Http.GetAsync($"./api/FileExplorer/testTimeout?time={Time}");
+    }
+}

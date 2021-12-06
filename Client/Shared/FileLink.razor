@@ -1,0 +1,14 @@
+﻿<a href="" @onclick="ClickHandler">@File.Name</a>
+
+@code {
+    [Parameter]
+    public FileDto File { get; set; }
+
+    [Parameter]
+    public EventCallback<string> Click { get; set; }
+
+    private async Task ClickHandler()
+    {
+        await Click.InvokeAsync(File.Name);
+    }
+}

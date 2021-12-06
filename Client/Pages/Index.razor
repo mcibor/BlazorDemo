@@ -1,12 +1,12 @@
 ﻿@page "/"
 
-@if (DirectoryListing != null)
+@if (_directoryListing != null)
 {
     <table class="table">
         <thead>
             <tr>
                 <th colspan="2">
-                    <DirectoryPathLinks FullPath=@DirectoryListing.FullName ChangeDirectory=ChangeToAbsoluteDirectory />
+                    <DirectoryPathLinks FullPath=@_directoryListing.FullName ChangeDirectory=ChangeToAbsoluteDirectory />
                 </th>
             </tr>
             <tr>
@@ -21,27 +21,21 @@
                 </th>
             </tr>
 
-            @if (DirectoryListing.Directories != null)
+            @foreach (var d in _directories)
             {
-                @foreach (var d in DirectoryListing.Directories)
-                {
-                    <tr>
-                        <th colspan="2">
-                            <DirectoryLink Directory=@d ChangeDirectory=ChangeDirectory />
-                        </th>
-                    </tr>
-                }
+                <tr>
+                    <th colspan="2">
+                        <DirectoryLink Directory=@d ChangeDirectory=ChangeDirectory />
+                    </th>
+                </tr>
             }
 
-            @if (DirectoryListing.Files != null)
+            @foreach (var f in _files)
             {
-                @foreach (var f in DirectoryListing.Files)
-                {
-                    <tr>
-                        <th><a href="" @onclick="()=>DownloadFile(f.Name)">@f.Name</a></th>
-                        <th>@f.Size</th>
-                    </tr>
-                }
+                <tr>
+                    <th><FileLink File=@f Click=DownloadFile /></th>
+                    <th>@FormatSize(f.Size)</th>
+                </tr>
             }
             
         </tbody>
@@ -51,7 +45,11 @@
 @code{
     const string ParentDir = "..";
 
-    DirectoryListingDto? DirectoryListing { get; set; }
+    DirectoryListingDto? _directoryListing { get; set; }
+
+    IEnumerable<string> _directories => _directoryListing?.Directories ?? Enumerable.Empty<string>();
+
+    IEnumerable<FileDto> _files => _directoryListing?.Files ?? Enumerable.Empty<FileDto>();
 
     [Inject]
     HttpClient? http { get; set; }
@@ -61,27 +59,45 @@
 
     protected override async Task OnInitializedAsync()
     {
-        DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer");
+        _directoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer");
     }
 
     private async Task ChangeToAbsoluteDirectory(string directory)
     {
         var path = System.Web.HttpUtility.UrlEncode(directory);
-        DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
+        _directoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
     }
 
     private async Task ChangeDirectory(string directory)
     {
-        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName!, directory));
-        DirectoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
+        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(_directoryListing!.FullName!, directory));
+        _directoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>("./api/FileExplorer?path=" + path);
     }
 
     private async Task DownloadFile(string fileName)
     {
-        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(DirectoryListing!.FullName!, fileName));
+        var path = System.Web.HttpUtility.UrlEncode(Path.Combine(_directoryListing!.FullName!, fileName));
         var responseStream = await http!.GetStreamAsync("./api/FileExplorer?path=" + path);
         using var streamRef = new DotNetStreamReference(responseStream);
         await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private string FormatSize(long size)
+    {
+        if (size < 1024)
+        {
+            return $"{size}\u00A0B";
+        }
+        if (size < 1024 * 1024)
+        {
+            return $"{size / 1024.0:F1}\u00A0KB";
+        }
+        if (size < 1024 * 1024 * 1024)
+        {
+            return $"{size / 1024.0 / 1024.0:F2}\u00A0MB";
+        }
+
+        return $"{size / 1024.0 / 1024.0 / 1024.0:F3}\u00A0GB";
     }
 }
 

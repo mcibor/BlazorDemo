@@ -1,7 +1,7 @@
 ﻿<a href="" @onclick="InvokeChangeDirectory">
-    @if (Body != null)
+    @if (ChildContent != null)
     {
-        @Body
+        @ChildContent
     }
     else
     {
@@ -17,7 +17,7 @@
     public EventCallback<string> ChangeDirectory { get; set; }
     
     [Parameter]
-    public RenderFragment Body { get; set; }
+    public RenderFragment ChildContent { get; set; }
 
     Task InvokeChangeDirectory()
     {
