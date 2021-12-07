@@ -1,4 +1,7 @@
-﻿<a href="" @onclick="InvokeChangeDirectory">
+﻿@implements IDisposable
+
+<a href="" @onclick="InvokeChangeDirectory">
+
     @if (ChildContent != null)
     {
         @ChildContent
@@ -7,20 +10,90 @@
     {
         @Directory
     }
+
+    @if (ChangingDirectory)
+    {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
 </a>
 
 @code {
+    [Inject]
+    public ILogger<DirectoryLink> Logger { get; set; }
+
     [Parameter]
     public string? Directory { get;  set; }
 
     [Parameter]
     public EventCallback<string> ChangeDirectory { get; set; }
-    
-    [Parameter]
-    public RenderFragment ChildContent { get; set; }
 
-    Task InvokeChangeDirectory()
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private static int LinksCount;
+
+    private bool ChangingDirectory { get; set; }
+
+    private int LinkId { get; set; }
+
+    private Lazy<CancellationTokenSource> cancellationTokenSource = new Lazy<CancellationTokenSource>();
+
+    protected override void OnInitialized()
     {
-        return ChangeDirectory.InvokeAsync(Directory);
+        LinkId = Interlocked.Increment(ref LinksCount);
+        Log("Directory link initialized");
+        base.OnInitialized();
+    }
+
+    private void Log(string msg)
+    {
+        if (Logger.IsEnabled(LogLevel.Debug))
+        {
+            Logger.LogDebug($"[{LinkId:D4}] {msg} [{Directory}]");
+        }
+    }
+
+    private void InvokeChangeDirectory()
+    {
+        var cts = cancellationTokenSource.Value;
+        var showSpinnerTask = Task.Delay(100, cts.Token)
+            .ContinueWith(t => 
+            {
+                Log("Turn on spinner");
+                if (cts.IsCancellationRequested) 
+                    return;
+
+                ChangingDirectory = true;
+                StateHasChanged();
+            },
+            TaskContinuationOptions.OnlyOnRanToCompletion);
+
+        ChangeDirectory.InvokeAsync(Directory).ContinueWith(t => 
+        {
+            Log("Directory changed");
+            if (!showSpinnerTask.IsCompleted)
+            {
+                Log("Cancel spinner task");
+                cts.Cancel();
+            }
+            else if (ChangingDirectory)
+            {
+                Log("Turn off spinner");
+                ChangingDirectory = false;
+                StateHasChanged();
+            }
+        });
+    }
+
+    public void Dispose()
+    {
+        Log("Disposing directory link");
+        if (cancellationTokenSource.IsValueCreated)
+        {
+            Log("Disposing cancellation token source");
+            var cts = cancellationTokenSource.Value;
+            cts.Cancel();
+            cts.Dispose();
+        }
     }
 }
