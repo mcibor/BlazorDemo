@@ -1,7 +1,7 @@
-﻿@implements IDisposable
+﻿@using System.Text.RegularExpressions
+@implements IDisposable
 
-<a href="" @onclick="InvokeChangeDirectory">
-
+<a href="@GetHref()" @onclick="InvokeChangeDirectory">
     @if (ChildContent != null)
     {
         @ChildContent
@@ -30,6 +30,9 @@
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    [Parameter]
+    public string? Root { get; set; }
+
     private static int LinksCount;
 
     private bool ChangingDirectory { get; set; }
@@ -43,6 +46,24 @@
         LinkId = Interlocked.Increment(ref LinksCount);
         Log("Directory link initialized");
         base.OnInitialized();
+    }
+
+    private string GetHref()
+    {
+        if (Directory == null) return "";
+
+        if (Regex.IsMatch(Directory, @"^[A-Z]:\/"))
+        {
+            return $"explorer/{Directory}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(Root))
+        {
+            return $"explorer/{Path.Combine(Root, Directory)}";
+        }
+
+        return "";
+
     }
 
     private void Log(string msg)

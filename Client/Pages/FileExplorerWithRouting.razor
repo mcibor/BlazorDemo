@@ -1,0 +1,103 @@
+﻿@page "/explorer/{*Path}"
+@using System.Web
+
+@if (_directoryListing != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th colspan="2">
+                    <DirectoryPathLinks FullPath=@_directoryListing.FullName/>
+                </th>
+            </tr>
+            <tr>
+                <th>Name</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th colspan="2">  
+                    <DirectoryLink Directory=@ParentDir Root=@_directoryListing.FullName/>
+                </th>
+            </tr>
+
+            @foreach (var d in _directories)
+            {
+                <tr>
+                    <th colspan="2">
+                        <DirectoryLink Directory=@d Root=@_directoryListing.FullName/>
+                    </th>
+                </tr>
+            }
+
+            @foreach (var f in _files)
+            {
+                <tr>
+                    <th><a href=@GetFileUrl(f.Name)>@f.Name</a></th>
+                    <th>@FormatSize(f.Size)</th>
+                </tr>
+            }
+            
+        </tbody>
+    </table>
+}
+
+@code{
+    const string ParentDir = "..";
+
+    DirectoryListingDto? _directoryListing { get; set; }
+
+    IEnumerable<string> _directories => _directoryListing?.Directories ?? Enumerable.Empty<string>();
+
+    IEnumerable<FileDto> _files => _directoryListing?.Files ?? Enumerable.Empty<FileDto>();
+
+    [Inject]
+    HttpClient? http { get; set; }
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; }
+
+    [Parameter]
+    public string Path { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var requestUrl = "./api/FileExplorer";
+        if (string.IsNullOrEmpty(Path))
+        {
+            _directoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>(requestUrl);
+            NavigationManager.NavigateTo($"explorer/{_directoryListing.FullName}", false);
+        }
+        else
+        {
+            _directoryListing = await http!.GetFromJsonAsync<DirectoryListingDto>(
+                $"{requestUrl}?path={HttpUtility.UrlEncode(Path)}");
+        }
+    }
+
+    private string GetFileUrl(string fileName)
+    {
+        var physicalPath = System.IO.Path.Combine(_directoryListing.FullName, fileName);
+        return $"api/FileExplorer?path={HttpUtility.UrlEncode(physicalPath)}";
+    }
+
+    private string FormatSize(long size)
+    {
+        if (size < 1024)
+        {
+            return $"{size}\u00A0B";
+        }
+        if (size < 1024 * 1024)
+        {
+            return $"{size / 1024.0:F1}\u00A0KB";
+        }
+        if (size < 1024 * 1024 * 1024)
+        {
+            return $"{size / 1024.0 / 1024.0:F2}\u00A0MB";
+        }
+
+        return $"{size / 1024.0 / 1024.0 / 1024.0:F3}\u00A0GB";
+    }
+}
+

@@ -22,6 +22,11 @@ namespace BlazorApp.Server.Controllers
                 return PhysicalFile(fileInfo.FullName, "application/octet-stream", fileInfo.Name);
             }
 
+            if (!path.EndsWith("/"))
+            {
+                path += "/";
+            }
+
             var dirInfo = new DirectoryInfo(path);
             if (dirInfo.Exists)
             {
@@ -31,12 +36,6 @@ namespace BlazorApp.Server.Controllers
             }
 
             return BadRequest();
-        }
-
-        [HttpGet("testTimeout")]
-        public ActionResult TestTimeout(int? time)
-        {
-            return new SlowResult(time ?? 100);
         }
 
         private static DirectoryListingDto GetDirectoryListing(DirectoryInfo dirInfo)
@@ -62,38 +61,10 @@ namespace BlazorApp.Server.Controllers
 
             return new DirectoryListingDto
             {
-                FullName = dirInfo.FullName,
+                FullName = dirInfo.FullName.Replace("\\", "/"),
                 Files = files.IsValueCreated ? files.Value : null,
                 Directories = dirs.IsValueCreated ? dirs.Value : null,
             };
-        }
-    }
-
-    public class SlowResult : ActionResult
-    {
-        private readonly int totalActionTimeInSeconds;
-
-        public SlowResult(int totalActionTimeInSeconds)
-        {
-            this.totalActionTimeInSeconds = totalActionTimeInSeconds;
-        }
-
-        public override async Task ExecuteResultAsync(ActionContext context)
-        {
-            var response = context.HttpContext.Response;
-            response.StatusCode = 200;
-            response.ContentType = "application/octet-stream";
-            response.ContentLength = totalActionTimeInSeconds;
-
-            await response.StartAsync();
-
-            for (int i = 0; i < totalActionTimeInSeconds; i++)
-            {
-                response.Body.WriteByte(1);
-                await Task.Delay(TimeSpan.FromSeconds(1));
-            }
-
-            await response.CompleteAsync();
         }
     }
 }

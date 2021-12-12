@@ -3,28 +3,18 @@
     string dirPath = "";
     foreach (var dirName in RootDirectories)
     {
-        if (dirName.Length == 2 && dirName.EndsWith(":"))
-        {
-            dirPath = dirName + "\\";
-        }
-        else
-        {
-            if (!dirPath.EndsWith("\\"))
-            {
-                dirPath += "\\";
-            }
-            dirPath += dirName;
-        }
+        dirPath += dirName + "/";
 
         <DirectoryLink Directory=@dirPath ChangeDirectory=ChangeDirectory>
             @dirName
         </DirectoryLink>
-        @:\
+
+        <span>/</span>
     }
 }
 
 @code {
-    IEnumerable<string> RootDirectories => FullPath?.Split('\\').Where(s => !string.IsNullOrWhiteSpace(s)) ?? Enumerable.Empty<string>();
+    IEnumerable<string> RootDirectories => FullPath?.Split('/').Where(s => !string.IsNullOrWhiteSpace(s)) ?? Enumerable.Empty<string>();
 
     [Parameter]
     public string? FullPath { get; set; }    
